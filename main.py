@@ -104,6 +104,58 @@ def calc_omega3(x_tkm1, y_tkm1, z_tkm1, kappa, sgm, theta, xi, chi, rho, delta):
 
     return V0, V1, V2
 
+@jit(nopython=True)
+def EM_method(X_tkm1, V0, V1, V2, delta):
+    """
+    Input:
+        1. V0, V1, V2 contains the vector component of x(t), y(t) or z(t) depending on
+            which random variable is passed in.
+    Usage:
+        0. X(t) is the random variable to simulate. X(t) is discretized into n steps s.t {X(t_k)}, k = 1,...,n.
+        1. Taking in X(t_km1), apply natural log to X(t_km1).
+        2. Simulate eta as standard normal variables ==> N(0,1) for every time step k and dimension i.
+            Dimension i follows the index of V.
+        3. Simulate the random variable X(t_k) using EM method.
+    Return:
+        One-dimensional random variable X(t_k)
+    """
+    d = 2
+    s = delta
+
+    print("Input for EM V0:", V0)
+    print("Input for EM V1:",V1)
+    print("Input for EM V2:",V2)
+    V0 = np.log(V0)/s
+    V1 = np.log(V1)/s
+    V2 = np.log(V2)/s
+
+    eta = np.random.normal(0, 1, size=d)
+    eta1 = eta[0]
+    eta2 = eta[1]
+
+    X_tk = X_tkm1 + V0*s + V1*eta1*np.sqrt(s) + V2*eta2*np.sqrt(s)
+    return X_tk
+
+@jit(nopython=True)
+def NV_method(X_tkm1, V0, V1, V2, delta):
+    """
+    Input:
+    Usage:
+    Returns:
+        One-dimensional random variable X(t_k)
+    """
+    d = 2
+    s = delta
+    eta = np.random.normal(0, 1, size=(d+1))
+    eta1 = eta[0]
+    eta2 = eta[1]
+    eta3 = eta[2]
+
+    if eta3 >= 0:
+        X_tk = np.exp(s*V0/2) * np.exp(np.sqrt(s)*eta1*V1) * np.exp(np.sqrt(s)*eta2*V2) * np.exp(s*V0/2) * X_tkm1
+    else:
+        X_tk = np.exp(d*s*V0/2) * np.exp(np.sqrt(s)*V2*eta2) * np.exp(np.sqrt(s)*eta1*V1) * np.exp(s*V0/2) * X_tkm1
+    return X_tk
 
 
 
