@@ -2,12 +2,10 @@ import numpy as np
 from numba import jit
 
 @jit(nopython=True)
-def calc_J(xi, chi, theta):
-    return xi - (chi**2)/(4*theta)
-
-@jit(nopython=True)
 def calc_h(chi,t):
-    """Assuming one dimension"""
+    """
+    Assuming one dimension
+    """
     return np.exp(-chi*t)
 
 @jit(nopython=True)
@@ -17,6 +15,18 @@ def calc_G(t,T, chi):
     Calculating G to be used as input for bond reconstruction formula
     """
     return (1-np.exp(chi*(T-t)))/chi
+
+@jit(nopython=True)
+def calc_J(xi, chi, theta):
+    """
+    Inputs:
+        Inputs are xi, chi and theta which are defined in the paper.
+    Usage:
+        Calculate a component of NV-method.
+    Return:
+        A single number.
+    """
+    return xi - (chi**2)/(4*theta)
 
 @jit(nopython=True)
 def calc_omega1(x_tkm1, y_tkm1, z_tkm1, kappa, sgm, theta, xi, chi, rho, delta):
@@ -33,16 +43,17 @@ def calc_omega1(x_tkm1, y_tkm1, z_tkm1, kappa, sgm, theta, xi, chi, rho, delta):
         0. V_{i}, i=[0,1,2]
         1. Calculate exp{sV(omega1)} by combining omega1 from  V_{0}, V_{1} and V_{2}.
     Return:
+        exp{sV0(omega1)}, exp{sV1(omega1)}, exp{sV2(omega1)}
     """
     J = calc_J(xi, chi, theta)
     s = delta
 
     """ Calculating components of V0 """
     V0_1 = (sgm**2 * (z_tkm1 + J))/((2*kappa-theta)*(kappa-theta)) * (np.exp(-theta*delta)-np.exp(-kappa*delta))
-    V0_2 = (sgm**2/kappa)*( J/(2*kappa) - (z_tkm1+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
-    V0_3 = (y_tkm1 - (sgm**2 *J)/(2*kappa)-(rho*chi*sgm)/4 )*(1-np.exp(-kappa*s))/kappa
+    V0_2 = (sgm**2/kappa)*(J/(2*kappa) - (z_tkm1+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
+    V0_3 = (y_tkm1 - (sgm**2*J)/(2*kappa)-(rho*chi*sgm)/4)*(1-np.exp(-kappa*s))/kappa
 
-    x_V0 = x_tkm1 +  V0_1 - V0_2 +V0_3
+    x_V0 = x_tkm1 + V0_1 - V0_2 + V0_3
     x_V1 = ( (sgm*s)/2 + np.sqrt(z_tkm1))**2
     x_V2 = x_tkm1
 
@@ -63,6 +74,7 @@ def calc_omega2(x_tkm1, y_tkm1, z_tkm1, kappa, sgm, theta, xi, chi, rho, delta):
         0. V_{i}, i=[0,1,2]
         1. Calculate exp{sV(omega2)} by combining omega2 from  V_{0}, V_{1} and V_{2}.
     Return:
+        exp{sV0(omega2)}, exp{sV1(omega2)}, exp{sV2(omega2)}
     """
     J = calc_J(xi, chi, theta)
     s = delta
@@ -92,6 +104,7 @@ def calc_omega3(x_tkm1, y_tkm1, z_tkm1, kappa, sgm, theta, xi, chi, rho, delta):
         0. V_{i}, i=[0,1,2]
         1. Calculate exp{sV(omega3)} by combining omega3 from  V_{0}, V_{1} and V_{2}.
     Return:
+        exp{sV0(omega3)}, exp{sV1(omega3)}, exp{sV2(omega3)}
     """
     J = calc_J(xi, chi, theta)
     s = delta
@@ -119,15 +132,20 @@ def EM_method(X_tkm1, V0, V1, V2, delta):
     Return:
         One-dimensional random variable X(t_k)
     """
+    """
+    Need to adjust for V-tilde
+    Need to recode this function 
+    """
+
     d = 2
     s = delta
 
     print("Input for EM V0:", V0)
-    print("Input for EM V1:",V1)
-    print("Input for EM V2:",V2)
-    V0 = np.log(V0)/s
-    V1 = np.log(V1)/s
-    V2 = np.log(V2)/s
+    print("Input for EM V1:", V1)
+    print("Input for EM V2:", V2)
+    # V0 = np.log(V0)/s
+    # V1 = np.log(V1)/s
+    # V2 = np.log(V2)/s
 
     eta = np.random.normal(0, 1, size=d)
     eta1 = eta[0]
@@ -144,17 +162,26 @@ def NV_method(X_tkm1, V0, V1, V2, delta):
     Returns:
         One-dimensional random variable X(t_k)
     """
+    # np.random.seed(0)
     d = 2
     s = delta
-    eta = np.random.normal(0, 1, size=(d+1))
+
+    eta = np.random.normal(0, 1, size=(d + 1))
     eta1 = eta[0]
     eta2 = eta[1]
     eta3 = eta[2]
 
+    print("NV: X_tkm1 = ", X_tkm1)
+    print("Eta3 = ", eta3)
     if eta3 >= 0:
         X_tk = np.exp(s*V0/2) * np.exp(np.sqrt(s)*eta1*V1) * np.exp(np.sqrt(s)*eta2*V2) * np.exp(s*V0/2) * X_tkm1
+        # X_tk = np.exp(s * V0 / 2) * np.exp(np.sqrt(s) * eta1 * V1) * np.exp(np.sqrt(s) * eta2 * V2) * np.exp(
+        #     s * V0 / 2)
     else:
         X_tk = np.exp(d*s*V0/2) * np.exp(np.sqrt(s)*V2*eta2) * np.exp(np.sqrt(s)*eta1*V1) * np.exp(s*V0/2) * X_tkm1
+        # X_tk = np.exp(d * s * V0 / 2) * np.exp(np.sqrt(s) * V2 * eta2) * np.exp(np.sqrt(s) * eta1 * V1) * np.exp(
+        #     s * V0 / 2)
+    print("NV: X_tk = ", X_tk)
     return X_tk
 
 
