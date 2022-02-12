@@ -131,8 +131,67 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
 
     return X
 
+@jit(nopython=True)
+def V0(I, kappa, sgm, theta, xi, chi, rho):
+    w1 = I[0]
+    w2 = I[1]
+    w3 = I[2]
+    sgm2 = sgm**2
 
+    v0 = np.zeros(3)
+    v0[0] = w2 - kappa*w1 - (rho*chi*sgm)/4
+    v0[1] = sgm2*w3 - 2*kappa*w2
+    v0[2] = theta*(xi-w3) - (chi**2)/4
 
+    return v0
+
+@jit(nopython=True)
+def V1(I, kappa, sgm, theta, xi, chi, rho):
+    w1 = I[0]
+    w2 = I[1]
+    w3 = I[2]
+
+    v1 = np.zeros(3)
+    v1[0] = sgm*np.sqrt(w3)
+    v1[1] = 0
+    v1[2] = rho*chi*np.sqrt(w3)
+
+    return v1
+
+@jit(nopython=True)
+def V2(I, kappa, sgm, theta, xi, chi, rho):
+    w1 = I[0]
+    w2 = I[1]
+    w3 = I[2]
+
+    v2 = np.zeros(3)
+    v2[0] = 0
+    v2[1] = 0
+    v2[2] = np.sqrt(1-rho**2) * chi * np.sqrt(w3)
+
+    return v2
+
+@jit(nopython=True)
+def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
+    w1 = I[0]
+    w2 = I[1]
+    w3 = I[2]
+    s = T/n
+
+    v0 = V0(I, kappa, sgm, theta, xi, chi, rho)
+    v1 = V1(I, kappa, sgm, theta, xi, chi, rho)
+    v2 = V2(I, kappa, sgm, theta, xi, chi, rho)
+
+    eta = np.random.normal(0, 1, size=(3,2))
+    eta1 = eta[:, 0]
+    eta2 = eta[:, 1]
+    print("eta: \n", eta)
+    print("eta1:", eta1)
+    print("eta2:", eta2)
+
+    X = I + (v0*s) + v1*np.sqrt(s)*eta1 + v2*np.sqrt(s)*eta2
+
+    return X
 
 
 

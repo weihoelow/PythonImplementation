@@ -41,5 +41,5 @@ print(expV1(s1, I, kappa, sgm, theta, xi, chi, rho))
 print(expV2(s2, I, kappa, sgm, theta, xi, chi, rho))
 
 
-# print(f"EM method simulation of X_tk = {EM_method()}")
-print(f"NV method simulation of X_tk = {NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho)}")
+print(f"EM-method simulation of X_tk = {EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n)}")
+print(f"NV-method simulation of X_tk = {NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho)}")
