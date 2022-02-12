@@ -155,7 +155,7 @@ def EM_method(X_tkm1, V0, V1, V2, delta):
     return X_tk
 
 @jit(nopython=True)
-def NV_method(X_tkm1, V0, V1, V2, delta):
+def NV_method(X _tkm1, V0, V1, V2, delta):
     """
     Input:
     Usage:

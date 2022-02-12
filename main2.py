@@ -29,7 +29,7 @@ def calc_J(xi, chi, theta):
     return xi - (chi**2)/(4*theta)
 
 @jit(nopython=True)
-def expV0(I, kappa, sgm, theta, xi, chi, rho, delta):
+def expV0(s, I, kappa, sgm, theta, xi, chi, rho):
     """
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
@@ -38,14 +38,13 @@ def expV0(I, kappa, sgm, theta, xi, chi, rho, delta):
     Usage:
         1. (omega1, omega2, omega3) are (x,y,z) accordingly.
     Return:
+        The 3D vector of exp(sV0)(X)
     """
     w1 = I[0]
     w2 = I[1]
     w3 = I[2]
     J = calc_J(xi, chi, theta)
     sgm2 = sgm**2
-    s = delta
-    v0 = np.zeros(3)
 
     '''Intermediate steps to calculate elements of v0'''
     A = (sgm2*(w3+J))/((s*kappa-theta)*(kappa-theta)) * (np.exp(-theta*s)-np.exp(-kappa*s))
@@ -54,14 +53,15 @@ def expV0(I, kappa, sgm, theta, xi, chi, rho, delta):
     D = (w3+J)/(2*kappa-theta)*(np.exp(-theta*s)-np.exp(-2*kappa*s))
     E = J*(1-np.exp(-2*kappa*s))/(2*kappa)
 
+    v0 = np.zeros(3)
     v0[0] = w1 + A - B/kappa + C/kappa
-    v0[1] = w2 + sgm2* (D - E)
+    v0[1] = w2 + sgm2*(D - E)
     v0[2] = (w3+J)*np.exp(-theta*s) - J
 
     return v0
 
 @jit(nopython=True)
-def expV1(I, kappa, sgm, theta, xi, chi, rho, delta):
+def expV1(s, I, kappa, sgm, theta, xi, chi, rho):
     """
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
@@ -70,11 +70,11 @@ def expV1(I, kappa, sgm, theta, xi, chi, rho, delta):
     Usage:
         1. (omega1, omega2, omega3) are (x,y,z) accordingly.
     Return:
+        The 3D vector of exp(sV1)(X)
     """
     w1 = I[0]
     w2 = I[1]
     w3 = I[2]
-    s = delta
 
     v1 = np.zeros(3)
     v1[0] = (sgm*s/2 + np.sqrt(w3))**2
@@ -84,7 +84,7 @@ def expV1(I, kappa, sgm, theta, xi, chi, rho, delta):
     return v1
 
 @jit(nopython=True)
-def expV2(I, kappa, sgm, theta, xi, chi, rho, delta):
+def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
     """
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
@@ -93,11 +93,11 @@ def expV2(I, kappa, sgm, theta, xi, chi, rho, delta):
     Usage:
         1. (omega1, omega2, omega3) are (x,y,z) accordingly.
     Return:
+        The 3D vector of exp(sV2)(X)
     """
     w1 = I[0]
     w2 = I[1]
     w3 = I[2]
-    s = delta
 
     v2 = np.zeros(3)
     v2[0] = w1
@@ -105,6 +105,35 @@ def expV2(I, kappa, sgm, theta, xi, chi, rho, delta):
     v2[2] = (np.sqrt(1-rho**2)*xi*s/2 + np.sqrt(w3))**2
 
     return v2
+
+@jit(nopython=True)
+def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
+    d = 2
+    s0 = s_arr[0]
+    s1 = s_arr[1]
+    s2 = s_arr[2]
+
+    eta = np.random.normal(0, 1, size=(d+1))
+    eta1 = eta[0]
+    eta2 = eta[1]
+    eta3 = eta[2]
+
+    if eta2 >= 0:
+        comp1 = expV0(s0, I, kappa, sgm, theta, xi, chi, rho)
+        comp2 = expV2(s2*eta2, comp1, kappa, sgm, theta, xi, chi, rho)
+        comp3 = expV1(s1*eta1, comp2, kappa, sgm, theta, xi, chi, rho)
+        X = expV0(s0, comp3, kappa, sgm, theta, xi, chi, rho)
+    else:
+        comp1 = expV0(s0, I, kappa, sgm, theta, xi, chi, rho)
+        comp2 = expV1(s1 * eta1, comp1, kappa, sgm, theta, xi, chi, rho)
+        comp3 = expV2(s2 * eta2, comp2, kappa, sgm, theta, xi, chi, rho)
+        X = expV0(d*s0, comp3, kappa, sgm, theta, xi, chi, rho)
+
+    return X
+
+
+
+
 
 
 
