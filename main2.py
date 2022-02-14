@@ -108,7 +108,7 @@ def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
-    np.random.seed(0)
+    # np.random.seed(0)
 
     d = 2
     s0 = s_arr[0]
@@ -193,6 +193,7 @@ def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
     """
     np.random.seed(0)
 
+    s0 = (T/n)/2
     s = T/n  # T=1, s=1/n
 
     v0 = V0(I, kappa, sgm, theta, xi, chi, rho)
@@ -207,14 +208,20 @@ def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
     # print("eta1:", eta1)
     # print("eta2:", eta2)
 
-    X = I + (v_tilde*s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
+    # # Stratonovich-form
+    # X = I + (v0 * s0) + np.sqrt(s) * v1 * eta1 + np.sqrt(s) * v2 * eta2
+
+    # Ito-form
+    X = I + (v_tilde*s0) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
 
     return X
 
-def bond_recon_formula(P0t, P0T, x, y, t, T, chi):
+@jit(nopython=True)
+def zero_bond_price(P0t, P0T, x, y, t, T, chi):
     """
     Description:
         Calculating the bond price which follows qG-model.
+        This implements eq (5) on p.1151
     Input:
         1. P0t: Observable price for bond maturing at t.
         2. P0T: Observable price for bond maturing at T.
@@ -226,10 +233,25 @@ def bond_recon_formula(P0t, P0T, x, y, t, T, chi):
     """
     G = calc_G(t, T, chi)
     G2 = G**2
-    exponent = -(G*x) - (0.5*G2*y)
+    exponent = -(G*x) - (0.5 * G2 * y)
     P_tT = (P0t/P0T) * np.exp(exponent)
 
     return P_tT
 
+@jit(nopython=True)
+def Libor(T_i, T_ip1, P):
+    """
+    Description:
+        Calculate the LIBOR rate from t to T using bond price from eq(5).
+        This implements eq (6) on p.1151.
+        delta(T_i, T_i+1) is the day count of the period [T_i, T_i+1].
+    Inputs:
+        1. T_i and T_ip1 are sub-periods
+    Return:
+         One-dimensional Libor rate
+    """
+    delta = T_ip1 -T_i
+    Libor = (1/delta)*(1/P - 1)
+    return Libor
 
 
