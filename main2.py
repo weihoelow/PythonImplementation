@@ -182,7 +182,7 @@ def V2(I, kappa, sgm, theta, xi, chi, rho):
     return v2
 
 @jit(nopython=True)
-def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
+def EM_method(s, I, kappa, sgm, theta, xi, chi, rho):
     """
     Description:
         EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
@@ -191,15 +191,15 @@ def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
     Return:
         A 3D vector of (x,y,z).
     """
-    np.random.seed(0)
+    # np.random.seed(0)
 
-    s0 = (T/n)/2
-    s = T/n  # T=1, s=1/n
+    # s0 = (T/n)/2
+    # s = T/n  # T=1, s=1/n
 
     v0 = V0(I, kappa, sgm, theta, xi, chi, rho)
     v1 = V1(I, kappa, sgm, theta, xi, chi, rho)
     v2 = V2(I, kappa, sgm, theta, xi, chi, rho)
-    v_tilde = v0 + 0.5*(v1*v1 + v2*v2)
+    v0_tilde = v0 + 0.5*(v1*v1 + v2*v2)
 
     eta = np.random.normal(0, 1, size=(3, 2))
     eta1 = eta[:, 0]
@@ -212,7 +212,7 @@ def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
     # X = I + (v0 * s0) + np.sqrt(s) * v1 * eta1 + np.sqrt(s) * v2 * eta2
 
     # Ito-form
-    X = I + (v_tilde*s0) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
+    X = I + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
 
     return X
 
