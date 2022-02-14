@@ -2,14 +2,14 @@ import numpy as np
 from numba import jit
 
 @jit(nopython=True)
-def calc_h(chi,t):
+def calc_h(chi, t):
     """
     Assuming one dimension
     """
     return np.exp(-chi*t)
 
 @jit(nopython=True)
-def calc_G(t,T, chi):
+def calc_G(t, T, chi):
     """
     Assuming one dimension.
     Calculating G to be used as input for bond reconstruction formula
@@ -47,11 +47,11 @@ def expV0(s, I, kappa, sgm, theta, xi, chi, rho):
     sgm2 = sgm**2
 
     '''Intermediate steps to calculate elements of v0'''
-    A = (sgm2*(w3+J))/((s*kappa-theta)*(kappa-theta)) * (np.exp(-theta*s)-np.exp(-kappa*s))
-    B = sgm2*(J/2*kappa - (w3+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
+    A = (sgm2*(w3+J))/((2*kappa-theta)*(kappa-theta)) * (np.exp(-theta*s)-np.exp(-kappa*s))
+    B = sgm2*((J/2*kappa) - (w3+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
     C = (w2 - (sgm2*J)/(2*kappa) - (rho*xi*sgm)/4) * (1-np.exp(-kappa*s))
     D = (w3+J)/(2*kappa-theta)*(np.exp(-theta*s)-np.exp(-2*kappa*s))
-    E = J*(1-np.exp(-2*kappa*s))/(2*kappa)
+    E = (J/(2*kappa))*(1-np.exp(-2*kappa*s))
 
     v0 = np.zeros(3)
     v0[0] = w1 + A - B/kappa + C/kappa
@@ -108,6 +108,8 @@ def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
+    np.random.seed(0)
+
     d = 2
     s0 = s_arr[0]
     s1 = s_arr[1]
@@ -118,16 +120,24 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
     eta2 = eta[1]
     eta3 = eta[2]
 
-    if eta2 >= 0:
-        comp1 = expV0(s0, I, kappa, sgm, theta, xi, chi, rho)
-        comp2 = expV2(s2*eta2, comp1, kappa, sgm, theta, xi, chi, rho)
-        comp3 = expV1(s1*eta1, comp2, kappa, sgm, theta, xi, chi, rho)
-        X = expV0(s0, comp3, kappa, sgm, theta, xi, chi, rho)
+    if eta3 >= 0:
+        X = expV0(s0,
+                  expV1(s1*eta1,
+                        expV2(s2*eta2,
+                              expV0(s0, I,
+                                    kappa, sgm, theta, xi, chi, rho),
+                              kappa, sgm, theta, xi, chi, rho),
+                        kappa, sgm, theta, xi, chi, rho),
+                  kappa, sgm, theta, xi, chi, rho)
     else:
-        comp1 = expV0(s0, I, kappa, sgm, theta, xi, chi, rho)
-        comp2 = expV1(s1 * eta1, comp1, kappa, sgm, theta, xi, chi, rho)
-        comp3 = expV2(s2 * eta2, comp2, kappa, sgm, theta, xi, chi, rho)
-        X = expV0(d*s0, comp3, kappa, sgm, theta, xi, chi, rho)
+        X = expV0(d*s0,
+                  expV2(s2*eta2,
+                        expV1(s1*eta1,
+                              expV0(s0, I,
+                                    kappa, sgm, theta, xi, chi, rho),
+                              kappa, sgm, theta, xi, chi, rho),
+                        kappa, sgm, theta, xi, chi, rho),
+                  kappa, sgm, theta, xi, chi, rho)
 
     return X
 
@@ -173,26 +183,53 @@ def V2(I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def EM_method(I, kappa, sgm, theta, xi, chi, rho, T, n):
-    w1 = I[0]
-    w2 = I[1]
-    w3 = I[2]
-    s = T/n
+    """
+    Description:
+        EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
+        The SDEs have a vector field representation.
+        Since the SDEs are of Ito form, V_tilde is calculated.
+    Return:
+        A 3D vector of (x,y,z).
+    """
+    np.random.seed(0)
+
+    s = T/n  # T=1, s=1/n
 
     v0 = V0(I, kappa, sgm, theta, xi, chi, rho)
     v1 = V1(I, kappa, sgm, theta, xi, chi, rho)
     v2 = V2(I, kappa, sgm, theta, xi, chi, rho)
+    v_tilde = v0 + 0.5*(v1*v1 + v2*v2)
 
-    eta = np.random.normal(0, 1, size=(3,2))
+    eta = np.random.normal(0, 1, size=(3, 2))
     eta1 = eta[:, 0]
     eta2 = eta[:, 1]
-    print("eta: \n", eta)
-    print("eta1:", eta1)
-    print("eta2:", eta2)
+    # print("eta: \n", eta)
+    # print("eta1:", eta1)
+    # print("eta2:", eta2)
 
-    X = I + (v0*s) + v1*np.sqrt(s)*eta1 + v2*np.sqrt(s)*eta2
+    X = I + (v_tilde*s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
 
     return X
 
+def bond_recon_formula(P0t, P0T, x, y, t, T, chi):
+    """
+    Description:
+        Calculating the bond price which follows qG-model.
+    Input:
+        1. P0t: Observable price for bond maturing at t.
+        2. P0T: Observable price for bond maturing at T.
+        3. x: First component of X, i.e X[0]
+        4. y: Second component of X, i.e X[1]
+        5. t, T are the time to maturity; 0 < t0 < t < T.
+    Return:
+        Zero bond price according to the discretisation schemes.
+    """
+    G = calc_G(t, T, chi)
+    G2 = G**2
+    exponent = -(G*x) - (0.5*G2*y)
+    P_tT = (P0t/P0T) * np.exp(exponent)
+
+    return P_tT
 
 
 
