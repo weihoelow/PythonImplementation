@@ -79,14 +79,14 @@ print("\n---------- Start of Testing ----------\n")
 
 T1 = 1  # T_i
 T2 = 2  # T_ip1
-P0T1 = 0.8
-P0T2 = 0.7
+P0T1 = 1/1.05
+P0T2 = 1/(1.05)**2
 
 ''' (1) NV-method '''
 n_NV = 10
 # M = 3 # Testing only
-M = 2**10  # MC runs = 1,024
-# M = 2**16  # MC runs = 65,536
+# M = 2**10  # MC runs = 1,024
+M = 2**16  # MC runs = 65,536
 # M = 2**24  # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
@@ -120,14 +120,15 @@ print("NV-method:")
 print("For (n, M):", (n_NV, M), ",")
 print("Expected bond price:", MC_bond_NV_mean)
 print("Standard Error:", MC_bond_NV_stderr)
+print(f"Confidence Interval: [{MC_bond_NV_mean - 2*MC_bond_NV_stderr}, {MC_bond_NV_mean + 2*MC_bond_NV_stderr}]")
 
 ''' (2) EM-method '''
 n_EM = 80
 s = (T2 - T1)/n_EM
 
 # M = 1 # Testing only
-M = 2**10  # MC runs = 1,024
-# M = 2**16  # MC runs = 65,536
+# M = 2**10  # MC runs = 1,024
+M = 2**16  # MC runs = 65,536
 # M = 2**24  # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
@@ -148,10 +149,11 @@ for i in range(M):
     bond_price_arr[i] = bond_EM
     """ End of MC for EM-method """
 
-print(bond_price_arr.shape)
+# print(bond_price_arr.shape)
 MC_bond_EM_mean = bond_price_arr.sum()/M
 MC_bond_EM_stderr = bond_price_arr.std()/np.sqrt(M)
 print("EM-method:")
 print("For (n, M):", (n_EM, M), ",")
 print("Expected bond price:", MC_bond_EM_mean)
 print("Standard Error:", MC_bond_EM_stderr)
+print(f"Confidence Interval: [{MC_bond_EM_mean - 2*MC_bond_EM_stderr}, {MC_bond_EM_mean + 2*MC_bond_EM_stderr}]")

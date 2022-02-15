@@ -234,7 +234,7 @@ def zero_bond_price(P0t, P0T, x, y, t, T, chi):
     G = calc_G(t, T, chi)
     G2 = G**2
     exponent = -(G*x) - (0.5 * G2 * y)
-    P_tT = (P0t/P0T) * np.exp(exponent)
+    P_tT = (P0T/P0t) * np.exp(exponent)
 
     return P_tT
 
@@ -251,7 +251,5 @@ def Libor(T_i, T_ip1, P):
          One-dimensional Libor rate
     """
     delta = T_ip1 -T_i
-    Libor = (1/delta)*(1/P - 1)
-    return Libor
-
-
+    Libor_rate = (1/delta)*(1/P - 1)
+    return Libor_rate
