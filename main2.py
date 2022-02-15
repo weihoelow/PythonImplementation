@@ -121,11 +121,11 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
     eta3 = eta[2]
 
     if eta3 >= 0:
-        X = expV0(s0,
+        X = expV0(d*s0,
                   expV1(s1*eta1,
                         expV2(s2*eta2,
-                              expV0(s0, I,
-                                    kappa, sgm, theta, xi, chi, rho),
+                              expV0(s0,
+                                    I, kappa, sgm, theta, xi, chi, rho),
                               kappa, sgm, theta, xi, chi, rho),
                         kappa, sgm, theta, xi, chi, rho),
                   kappa, sgm, theta, xi, chi, rho)
@@ -133,8 +133,8 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
         X = expV0(d*s0,
                   expV2(s2*eta2,
                         expV1(s1*eta1,
-                              expV0(s0, I,
-                                    kappa, sgm, theta, xi, chi, rho),
+                              expV0(s0,
+                                    I, kappa, sgm, theta, xi, chi, rho),
                               kappa, sgm, theta, xi, chi, rho),
                         kappa, sgm, theta, xi, chi, rho),
                   kappa, sgm, theta, xi, chi, rho)
@@ -145,7 +145,8 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
 def V0(I, kappa, sgm, theta, xi, chi, rho):
     w1 = I[0]
     w2 = I[1]
-    w3 = I[2]
+    # w3 = I[2]
+    w3 = np.maximum(I[2], 0)
     sgm2 = sgm**2
 
     v0 = np.zeros(3)
@@ -159,7 +160,8 @@ def V0(I, kappa, sgm, theta, xi, chi, rho):
 def V1(I, kappa, sgm, theta, xi, chi, rho):
     w1 = I[0]
     w2 = I[1]
-    w3 = I[2]
+    # w3 = I[2]
+    w3 = np.maximum(I[2], 0)
 
     v1 = np.zeros(3)
     v1[0] = sgm*np.sqrt(w3)
@@ -172,7 +174,8 @@ def V1(I, kappa, sgm, theta, xi, chi, rho):
 def V2(I, kappa, sgm, theta, xi, chi, rho):
     w1 = I[0]
     w2 = I[1]
-    w3 = I[2]
+    # w3 = I[2]
+    w3 = np.maximum(I[2], 0)
 
     v2 = np.zeros(3)
     v2[0] = 0
@@ -182,23 +185,21 @@ def V2(I, kappa, sgm, theta, xi, chi, rho):
     return v2
 
 @jit(nopython=True)
-def EM_method(s, I, kappa, sgm, theta, xi, chi, rho):
+def EM_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho):
     """
     Description:
         EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
         The SDEs have a vector field representation.
         Since the SDEs are of Ito form, V_tilde is calculated.
+        The function implements proposition 1 on p.1149.
     Return:
         A 3D vector of (x,y,z).
     """
     # np.random.seed(0)
 
-    # s0 = (T/n)/2
-    # s = T/n  # T=1, s=1/n
-
-    v0 = V0(I, kappa, sgm, theta, xi, chi, rho)
-    v1 = V1(I, kappa, sgm, theta, xi, chi, rho)
-    v2 = V2(I, kappa, sgm, theta, xi, chi, rho)
+    v0 = V0(X_tjm1, kappa, sgm, theta, xi, chi, rho)
+    v1 = V1(X_tjm1, kappa, sgm, theta, xi, chi, rho)
+    v2 = V2(X_tjm1, kappa, sgm, theta, xi, chi, rho)
     v0_tilde = v0 + 0.5*(v1*v1 + v2*v2)
 
     eta = np.random.normal(0, 1, size=(3, 2))
@@ -206,13 +207,10 @@ def EM_method(s, I, kappa, sgm, theta, xi, chi, rho):
     # print("eta: \n", eta)
     # print("eta1:", eta1)
 
-    # # Stratonovich-form
-    # X = I + (v0 * s0) + np.sqrt(s) * v1 * eta1 + np.sqrt(s) * v2 * eta2
-
     # Ito-form
-    X = I + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta1
+    X_tj = X_tjm1 + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta1
 
-    return X
+    return X_tj
 
 @jit(nopython=True)
 def zero_bond_price(P0t, P0T, x, y, t, T, chi):

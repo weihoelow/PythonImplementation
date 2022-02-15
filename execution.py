@@ -26,9 +26,9 @@ Implementing discretization schemes
 t = 0
 T = 1
 s = (T-t)/n
-s0 = T/(2*n)
-s1 = T/np.sqrt(n)
-s2 = T/np.sqrt(n)
+s0 = (T/n) * 0.5
+s1 = np.sqrt(T/n)
+s2 = np.sqrt(T/n)
 s_arr = np.array([s0, s1, s2])
 
 # print(expV0(s0, I, kappa, sgm, theta, xi, chi, rho))
@@ -50,6 +50,7 @@ Bond reconstruction formula
 '''
 P0t = 1/1.05
 P0T = 1/1.05**2
+print(P0T/P0t)
 em_x = EM_X[0]
 em_y = EM_X[1]
 nv_x = NV_X[0]
@@ -83,17 +84,27 @@ P0T1 = 1/1.05
 P0T2 = 1/(1.05**2)
 
 ''' (1) NV-method '''
-n_NV = 10
+kappa = 0.1
+sgm = 0.02
+theta = 1.5
+xi = 0.01
+chi = 0.01  # Volatility of CIR-process
+rho = -0.5
 
-s0 = (T2 - T1) / (2 * n_NV)
-s1 = (T2 - T1) / np.sqrt(n_NV)
-s2 = (T2 - T1) / np.sqrt(n_NV)
+n_NV = 2**3
+
+# s1 = (T2 - T1) / np.sqrt(n_NV)
+# s2 = (T2 - T1) / np.sqrt(n_NV)
+s0 = 0.5 * ((T2 - T1) / n_NV)
+s1 = np.sqrt((T2 - T1) / n_NV)
+s2 = np.sqrt((T2 - T1) / n_NV)
 s_arr = np.array([s0, s1, s2])
 
-# M = 3 # Testing only
-# M = 2**10  # MC runs = 1,024
-M = 2**16  # MC runs = 65,536
-# M = 2**24  # MC runs = 16,777,216
+# M = 3        # Testing only
+# M = 2**10    # MC runs = 1,024
+M = 2**16    # MC runs = 65,536
+# M = 2**20  # MC runs = 1,048,576
+# M = 2**24    # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
 for i in range(M):
@@ -102,7 +113,6 @@ for i in range(M):
     for j in range(1, n_NV):
         """ Do NV-method """
         X_arr[:, 0] = I
-        # print(X_arr)
         # print("X_tjm1", "j=", j, X_arr[:, j-1])
         x_tj = NV_method(s_arr, X_arr[:, j-1], kappa, sgm, theta, xi, chi, rho)
         X_arr[:, j] = x_tj
@@ -126,17 +136,22 @@ print(f"Confidence Interval: [{MC_bond_NV_mean - 2*MC_bond_NV_stderr}, {MC_bond_
 
 ''' (2) EM-method '''
 n_EM = 80
+# n_EM = 2**7  # 128
 s = (T2 - T1)/n_EM
 
 # M = 1 # Testing only
 # M = 2**10  # MC runs = 1,024
 M = 2**16  # MC runs = 65,536
+# M = 2**20  # MC runs = 1,048,576
 # M = 2**24  # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
+testing_bond_price_arr = np.zeros(M)
 for i in range(M):
     X_arr = np.ones(shape=(3, n_EM))
     X_arr[:, 0] = I
+    # testing_x = EM_method(1, I, kappa, sgm, theta, xi, chi, rho)
+    # testing_bond_price_arr[i] = zero_bond_price(P0T1, P0T2, testing_x[0], testing_x[1], T1, T2, chi)
     # print(X_arr)
     for j in range(1, n_EM):
         """ Do EM-method """
@@ -147,14 +162,23 @@ for i in range(M):
     x_Ti = X_arr[0, n_EM - 1]
     y_Ti = X_arr[1, n_EM - 1]
     bond_EM = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
-    # print("Bond price for NV: ", bond_NV)
     bond_price_arr[i] = bond_EM
     """ End of MC for EM-method """
 
-# print(bond_price_arr.shape)
+# ''' One step discretisation '''
+# testing_MC_bond_EM_mean = testing_bond_price_arr.sum()/M
+# testing_MC_bond_EM_stderr = testing_bond_price_arr.std()/np.sqrt(M)
+''' n_EM steps discretisation '''
 MC_bond_EM_mean = bond_price_arr.sum()/M
 MC_bond_EM_stderr = bond_price_arr.std()/np.sqrt(M)
+
 print("____ EM-method:")
+# print("For (n, M):", (1, M), ",")
+# print("Testing bond price:", testing_MC_bond_EM_mean)
+# print("Standard Error:", testing_MC_bond_EM_stderr)
+# print(f"Confidence Interval: [{testing_MC_bond_EM_mean - 2*testing_MC_bond_EM_stderr}, "
+#       f"{testing_MC_bond_EM_mean + 2*testing_MC_bond_EM_stderr}]")
+
 print("For (n, M):", (n_EM, M), ",")
 print("Expected bond price:", MC_bond_EM_mean)
 print("Standard Error:", MC_bond_EM_stderr)
