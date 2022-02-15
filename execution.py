@@ -7,7 +7,7 @@ kappa = 0.1
 sgm = 0.02
 theta = 1.5
 xi = 0.01
-chi = 0.01
+chi = 0.01  # Volatility of CIR-process
 rho = -0.5
 n = 20     # discretization steps
 M = 2**24  # MC runs
@@ -48,8 +48,8 @@ print(f"NV-method simulation of X_tk = {NV_X}")
 '''
 Bond reconstruction formula
 '''
-P0t = 0.8
-P0T = 0.7
+P0t = 1/1.05
+P0T = 1/1.05**2
 em_x = EM_X[0]
 em_y = EM_X[1]
 nv_x = NV_X[0]
@@ -75,15 +75,21 @@ Testing: Monte Carlo of bond price
     (2) EM-method
 '''
 print("\n---------- Start of Testing ----------\n")
-''' Common parameters '''
 
+''' Common parameters '''
 T1 = 1  # T_i
 T2 = 2  # T_ip1
 P0T1 = 1/1.05
-P0T2 = 1/(1.05)**2
+P0T2 = 1/(1.05**2)
 
 ''' (1) NV-method '''
 n_NV = 10
+
+s0 = (T2 - T1) / (2 * n_NV)
+s1 = (T2 - T1) / np.sqrt(n_NV)
+s2 = (T2 - T1) / np.sqrt(n_NV)
+s_arr = np.array([s0, s1, s2])
+
 # M = 3 # Testing only
 # M = 2**10  # MC runs = 1,024
 M = 2**16  # MC runs = 65,536
@@ -93,10 +99,6 @@ bond_price_arr = np.zeros(M)
 for i in range(M):
     X_arr = np.ones(shape=(3, n_NV))
     # print(X_arr)
-    s0 = (T2 - T1) / (2 * n_NV)
-    s1 = (T2 - T1) / np.sqrt(n_NV)
-    s2 = (T2 - T1) / np.sqrt(n_NV)
-    s_arr = np.array([s0, s1, s2])
     for j in range(1, n_NV):
         """ Do NV-method """
         X_arr[:, 0] = I
@@ -116,7 +118,7 @@ for i in range(M):
 
 MC_bond_NV_mean = bond_price_arr.sum()/M
 MC_bond_NV_stderr = bond_price_arr.std()/np.sqrt(M)
-print("NV-method:")
+print("____ NV-method:")
 print("For (n, M):", (n_NV, M), ",")
 print("Expected bond price:", MC_bond_NV_mean)
 print("Standard Error:", MC_bond_NV_stderr)
@@ -152,8 +154,15 @@ for i in range(M):
 # print(bond_price_arr.shape)
 MC_bond_EM_mean = bond_price_arr.sum()/M
 MC_bond_EM_stderr = bond_price_arr.std()/np.sqrt(M)
-print("EM-method:")
+print("____ EM-method:")
 print("For (n, M):", (n_EM, M), ",")
 print("Expected bond price:", MC_bond_EM_mean)
 print("Standard Error:", MC_bond_EM_stderr)
 print(f"Confidence Interval: [{MC_bond_EM_mean - 2*MC_bond_EM_stderr}, {MC_bond_EM_mean + 2*MC_bond_EM_stderr}]")
+
+"""
+Pricing derivatives 
+    1. Asian option (similar to the original paper)
+    2. Snowball (according to current paper)
+"""
+

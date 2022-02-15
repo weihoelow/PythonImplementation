@@ -203,16 +203,14 @@ def EM_method(s, I, kappa, sgm, theta, xi, chi, rho):
 
     eta = np.random.normal(0, 1, size=(3, 2))
     eta1 = eta[:, 0]
-    eta2 = eta[:, 1]
     # print("eta: \n", eta)
     # print("eta1:", eta1)
-    # print("eta2:", eta2)
 
     # # Stratonovich-form
     # X = I + (v0 * s0) + np.sqrt(s) * v1 * eta1 + np.sqrt(s) * v2 * eta2
 
     # Ito-form
-    X = I + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
+    X = I + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta1
 
     return X
 
