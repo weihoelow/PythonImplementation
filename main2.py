@@ -249,3 +249,22 @@ def Libor(T_i, T_ip1, P):
     delta = T_ip1 -T_i
     Libor_rate = (1/delta)*(1/P - 1)
     return Libor_rate
+
+@jit(nopython=True)
+def snowball_coupon(coupon_im1, L_TiTip1, f, k, c):
+    """
+    Description:
+        This function implements the calculation of coupon following eq(14) on p.1157.
+    Inputs:
+        1. coupon_im1: coupon from last period
+        2. L_TiTip1: Libor rate for period T_i to T_{i+1}
+        3. f: floor rate (according to author)
+        4. k: margin (according to author)
+        5. c: cap rate (according to author)
+    Return:
+        Coupon at time Ti.
+    """
+    temp = np.maximum(f, coupon_im1 + k - L_TiTip1)
+    coupon_i = np.minimum(c, temp)
+    # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
+    return coupon_i

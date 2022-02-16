@@ -85,6 +85,8 @@ P0T1 = 1/1.05
 P0T2 = 1/(1.05**2)
 
 ''' (1) NV-method '''
+print("____ [START] NV-method:")
+
 kappa = 0.1
 sgm = 0.02
 theta = 1.5
@@ -92,35 +94,38 @@ xi = 0.01
 chi = 0.01  # Volatility of CIR-process
 rho = -0.5
 
+# n_NV = 3  # For testing - 3 steps
 # n_NV = 2**3  # 8 steps
-n_NV = 3  # For testing - 3 steps
+n_NV = 2**4  # 16 steps
+# n_NV = 2**6  # 64 steps
 
 s0 = 0.5 * ((T2 - T1) / n_NV)
 s1 = np.sqrt((T2 - T1) / n_NV)
 s2 = np.sqrt((T2 - T1) / n_NV)
 s_arr = np.array([s0, s1, s2])
 
-M = 3        # Testing only
+# M = 1        # Testing only
 # M = 2**10    # MC runs = 1,024
-# M = 2**16    # MC runs = 65,536
+M = 2**16    # MC runs = 65,536
 # M = 2**20  # MC runs = 1,048,576
 # M = 2**24    # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
 for i in range(M):
-    X_arr = np.ones(shape=(3, n_NV))
+    X_arr = np.ones(shape=(3, n_NV+1))
     # print(X_arr)
-    for j in range(1, n_NV):
+    for j in range(1, n_NV+1):
         """ Do NV-method """
         X_arr[:, 0] = I
         # print("X_tjm1", "j=", j, X_arr[:, j-1])
         x_tj = NV_method(s_arr, X_arr[:, j-1], kappa, sgm, theta, xi, chi, rho)
         X_arr[:, j] = x_tj
         # print("X_tj", "j=", j, X_arr[:, j])
-    print(X_arr)
+    # print(X_arr)
     """ Do bond price from NV-method  """
-    x_Ti = X_arr[0, n_NV-1]
-    y_Ti = X_arr[1, n_NV-1]
+    x_Ti = X_arr[0, n_NV]
+    y_Ti = X_arr[1, n_NV]
+    # print(x_Ti, "\n", y_Ti)
     bond_NV = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
     # print("Bond price for NV: ", bond_NV)
     bond_price_arr[i] = bond_NV
@@ -128,65 +133,84 @@ for i in range(M):
 
 MC_bond_NV_mean = bond_price_arr.sum()/M
 MC_bond_NV_stderr = bond_price_arr.std()/np.sqrt(M)
-print("____ NV-method:")
+
 print("For (n, M):", (n_NV, M), ",")
 print("Expected bond price:", MC_bond_NV_mean)
 print("Standard Error:", MC_bond_NV_stderr)
 print(f"Confidence Interval: [{MC_bond_NV_mean - 2*MC_bond_NV_stderr}, {MC_bond_NV_mean + 2*MC_bond_NV_stderr}]")
+print("____ [END] NV-method:")
 
 ''' (2) EM-method '''
-n_EM = 80
+print("____ [START] EM-method:")
+
+# n_EM = 3  # For testing only
+# n_EM = 80
 # n_EM = 2**7  # 128
+n_EM = 2**8  # 256
 s = (T2 - T1)/n_EM
 
-M = 3 # Testing only
+# M = 1  # Testing only
 # M = 2**10  # MC runs = 1,024
-# M = 2**16  # MC runs = 65,536
+M = 2**16  # MC runs = 65,536
 # M = 2**20  # MC runs = 1,048,576
 # M = 2**24  # MC runs = 16,777,216
 
 bond_price_arr = np.zeros(M)
 testing_bond_price_arr = np.zeros(M)
 for i in range(M):
-    X_arr = np.ones(shape=(3, n_EM))
+    X_arr = np.ones(shape=(3, n_EM+1))
     X_arr[:, 0] = I
-    # testing_x = EM_method(1, I, kappa, sgm, theta, xi, chi, rho)
-    # testing_bond_price_arr[i] = zero_bond_price(P0T1, P0T2, testing_x[0], testing_x[1], T1, T2, chi)
+    testing_x = EM_method(1, I, kappa, sgm, theta, xi, chi, rho)
+    testing_bond_price_arr[i] = zero_bond_price(P0T1, P0T2, testing_x[0], testing_x[1], T1, T2, chi)
     # print(X_arr)
-    for j in range(1, n_EM):
+    for j in range(1, n_EM+1):
         """ Do EM-method """
         x_tj = EM_method(s, X_arr[:, j-1], kappa, sgm, theta, xi, chi, rho)
         X_arr[:, j] = x_tj
-        # print(X_arr)
+    # print(X_arr)
     """ Do bond price from EM-method  """
-    x_Ti = X_arr[0, n_EM - 1]
-    y_Ti = X_arr[1, n_EM - 1]
+    x_Ti = X_arr[0, n_EM]
+    y_Ti = X_arr[1, n_EM]
+    # print(x_Ti, "\n", y_Ti)
     bond_EM = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
     bond_price_arr[i] = bond_EM
     """ End of MC for EM-method """
 
-# ''' One step discretisation '''
-# testing_MC_bond_EM_mean = testing_bond_price_arr.sum()/M
-# testing_MC_bond_EM_stderr = testing_bond_price_arr.std()/np.sqrt(M)
+''' One step discretisation '''
+testing_MC_bond_EM_mean = testing_bond_price_arr.sum()/M
+testing_MC_bond_EM_stderr = testing_bond_price_arr.std()/np.sqrt(M)
 ''' n_EM steps discretisation '''
 MC_bond_EM_mean = bond_price_arr.sum()/M
 MC_bond_EM_stderr = bond_price_arr.std()/np.sqrt(M)
 
 print("____ EM-method:")
-# print("For (n, M):", (1, M), ",")
-# print("Testing bond price:", testing_MC_bond_EM_mean)
-# print("Standard Error:", testing_MC_bond_EM_stderr)
-# print(f"Confidence Interval: [{testing_MC_bond_EM_mean - 2*testing_MC_bond_EM_stderr}, "
-#       f"{testing_MC_bond_EM_mean + 2*testing_MC_bond_EM_stderr}]")
+print("For (n, M):", (1, M), ",")
+print("Testing bond price:", testing_MC_bond_EM_mean)
+print("Standard Error:", testing_MC_bond_EM_stderr)
+print(f"Confidence Interval: [{testing_MC_bond_EM_mean - 2*testing_MC_bond_EM_stderr}, "
+      f"{testing_MC_bond_EM_mean + 2*testing_MC_bond_EM_stderr}]")
 
 print("For (n, M):", (n_EM, M), ",")
 print("Expected bond price:", MC_bond_EM_mean)
 print("Standard Error:", MC_bond_EM_stderr)
 print(f"Confidence Interval: [{MC_bond_EM_mean - 2*MC_bond_EM_stderr}, {MC_bond_EM_mean + 2*MC_bond_EM_stderr}]")
 
+print("____ [END] EM-method:")
+
 """
 Pricing derivatives 
-    1. Asian option (similar to the original paper)
-    2. Snowball (according to current paper)
+    1. Snowball (according to current paper)
+    2. Asian option (similar to the original paper)
 """
 
+""" 
+Parameters for Snowball (provided by author) 
+"""
+c = 0.1
+f = 0.01
+k = 0.6
+
+K = 3  # For testing
+# K = 10  # according to author
+
+# for i in range(K):
