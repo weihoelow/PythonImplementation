@@ -107,13 +107,13 @@ def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
     return v2
 
 @jit(nopython=True)
-def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
-    # np.random.seed(0)
+def NV_method(s, X_tjm1, args_schemes):
+    kappa, sgm, theta, xi, chi, rho = args_schemes
 
     d = 2
-    s0 = s_arr[0]
-    s1 = s_arr[1]
-    s2 = s_arr[2]
+    s0 = 0.5*s
+    s1 = np.sqrt(s)
+    s2 = np.sqrt(s)
 
     eta = np.random.normal(0, 1, size=(d+1))
     eta1 = eta[0]
@@ -121,25 +121,25 @@ def NV_method(s_arr, I, kappa, sgm, theta, xi, chi, rho):
     eta3 = eta[2]
 
     if eta3 >= 0:
-        X = expV0(d*s0,
+        X_tj = expV0(d*s0,
                   expV1(s1*eta1,
                         expV2(s2*eta2,
                               expV0(s0,
-                                    I, kappa, sgm, theta, xi, chi, rho),
+                                    X_tjm1, kappa, sgm, theta, xi, chi, rho),
                               kappa, sgm, theta, xi, chi, rho),
                         kappa, sgm, theta, xi, chi, rho),
                   kappa, sgm, theta, xi, chi, rho)
     else:
-        X = expV0(d*s0,
+        X_tj = expV0(d*s0,
                   expV2(s2*eta2,
                         expV1(s1*eta1,
                               expV0(s0,
-                                    I, kappa, sgm, theta, xi, chi, rho),
+                                    X_tjm1, kappa, sgm, theta, xi, chi, rho),
                               kappa, sgm, theta, xi, chi, rho),
                         kappa, sgm, theta, xi, chi, rho),
                   kappa, sgm, theta, xi, chi, rho)
 
-    return X
+    return X_tj
 
 @jit(nopython=True)
 def V0(I, kappa, sgm, theta, xi, chi, rho):
@@ -185,17 +185,19 @@ def V2(I, kappa, sgm, theta, xi, chi, rho):
     return v2
 
 @jit(nopython=True)
-def EM_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho):
+def EM_method(s, X_tjm1, args_schemes):
     """
+    Inputs:
     Description:
-        EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
-        The SDEs have a vector field representation.
-        Since the SDEs are of Ito form, V_tilde is calculated.
-        The function implements proposition 1 on p.1149.
+        1. EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
+        2. The SDEs have a vector field representation.
+        3. Since the SDEs are of Ito form, V_tilde is calculated.
+        4. The function implements proposition 1 on p.1149.
+        5. For j=1, X_tjm1 = X_t0 = x0
     Return:
         A 3D vector of (x,y,z).
     """
-    # np.random.seed(0)
+    kappa, sgm, theta, xi, chi, rho = args_schemes
 
     v0 = V0(X_tjm1, kappa, sgm, theta, xi, chi, rho)
     v1 = V1(X_tjm1, kappa, sgm, theta, xi, chi, rho)
@@ -247,8 +249,8 @@ def Libor(T_i, T_ip1, P):
          One-dimensional Libor rate
     """
     delta = T_ip1 -T_i
-    Libor_rate = (1/delta)*(1/P - 1)
-    return Libor_rate
+    libor_rate = (1/delta)*(1/P - 1)
+    return libor_rate
 
 @jit(nopython=True)
 def snowball_coupon(coupon_im1, L_TiTip1, f, k, c):
@@ -268,3 +270,41 @@ def snowball_coupon(coupon_im1, L_TiTip1, f, k, c):
     coupon_i = np.minimum(c, temp)
     # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
     return coupon_i
+
+def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_tjm1, args_schemes, observed_bond_price):
+    """
+    Description:
+        1. Implementing the Monte Carlo method to pricing zero bond price.
+        2. The zero bond price is calculated at calendar points Tj, j=[1,2,...,K].
+    Return:
+        Monte Carlo bond price, Monte Carlo standard error
+    """
+    P0T1, P0T2 = observed_bond_price
+    kappa, sgm, theta, xi, chi, rho = args_schemes
+
+    bond_price_arr = np.zeros(M)
+    for i in range(M):
+        X_arr = np.ones(shape=(3, discretization_steps + 1))
+        # print(X_arr)
+        for j in range(1, discretization_steps + 1):
+            """ Do discretization method """
+            X_arr[:, 0] = X_tjm1
+            # print("X_tjm1", "j=", j, X_arr[:, j-1])
+            x_tj = discretization_method(s, X_arr[:, j - 1], args_schemes)
+            X_arr[:, j] = x_tj
+            # print("X_tj", "j=", j, X_arr[:, j])
+        # print(X_arr)
+        """ Do bond price """
+        x_Ti = X_arr[0, discretization_steps]
+        y_Ti = X_arr[1, discretization_steps]
+        # print(x_Ti, "\n", y_Ti)
+        temp_zero_bond_price = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
+        # print("Bond price: ", temp_zero_bond_price)
+        bond_price_arr[i] = temp_zero_bond_price
+        """ End of MC """
+    mc_bond_mean = bond_price_arr.sum() / M
+    mc_bond_stderr = bond_price_arr.std() / np.sqrt(M)
+    return mc_bond_mean, mc_bond_stderr
+
+# EM_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho)
+# NV_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho)
