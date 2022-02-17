@@ -253,7 +253,7 @@ def Libor(T_i, T_ip1, P):
     return libor_rate
 
 @jit(nopython=True)
-def snowball_coupon(coupon_im1, L_TiTip1, f, k, c):
+def snowball_coupon(coupon_im1, L_TiTip1, args_snowball):
     """
     Description:
         This function implements the calculation of coupon following eq(14) on p.1157.
@@ -266,6 +266,7 @@ def snowball_coupon(coupon_im1, L_TiTip1, f, k, c):
     Return:
         Coupon at time Ti.
     """
+    c, f, k = args_snowball
     temp = np.maximum(f, coupon_im1 + k - L_TiTip1)
     coupon_i = np.minimum(c, temp)
     # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
@@ -276,6 +277,7 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
     Description:
         1. Implementing the Monte Carlo method to pricing zero bond price.
         2. The zero bond price is calculated at calendar points Tj, j=[1,2,...,K].
+        3. Discretisation schemes can be set to EM-scheme or NV-scheme.
     Return:
         Monte Carlo bond price, Monte Carlo standard error
     """

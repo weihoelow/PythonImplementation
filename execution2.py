@@ -163,9 +163,7 @@ Parameters for Snowball (provided by author)
 c = 0.1
 f = 0.01
 k = 0.6
-
-K = 3  # For testing
-# K = 10  # 10 annual payments according to author
+args_snowball = np.array((c, f, k))
 
 kappa = 0.1
 sgm = 0.02
@@ -174,6 +172,16 @@ xi = 0.01
 chi = 0.01  # Volatility of CIR-process
 rho = -0.5
 args_schemes = np.array((kappa, sgm, theta, xi, chi, rho))
+
+P0T1 = 1/1.05
+P0T2 = 1/(1.05**2)
+observed_bond_price = np.array((P0T1, P0T2))
+
+T1 = 1  # T_i
+T2 = 2  # T_ip1
+
+K = 3  # For testing
+# K = 10  # 10 annual payments according to author
 
 # n_NV = 3     # For testing - 3 steps
 # n_NV = 2**3  # 8 steps
@@ -184,16 +192,7 @@ n_NV = 2**4  # 16 steps
 M = 2**16    # MC runs = 65,536
 # M = 2**20  # MC runs = 1,048,576
 # M = 2**24    # MC runs = 16,777,216
-#
-# for i in range(K):
-#     s = 0
 
-T1 = 1  # T_i
-T2 = 2  # T_ip1
-P0T1 = 1/1.05
-P0T2 = 1/(1.05**2)
-observed_bond_price = np.array((P0T1, P0T2))
-s = (T2-T1)/n_NV
-
-# print(MC_bond_price(M, NV_method, n_NV, T1, T2, s, I, args_schemes, observed_bond_price))
-
+for i in range(1, K+2):
+    ''' For coupon_K, need L(T_K, T_Kp1) '''
+    print(i)
