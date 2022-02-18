@@ -253,30 +253,11 @@ def Libor(T_i, T_ip1, P):
     return libor_rate
 
 @jit(nopython=True)
-def snowball_coupon(coupon_im1, L_TiTip1, args_snowball):
-    """
-    Description:
-        This function implements the calculation of coupon following eq(14) on p.1157.
-    Inputs:
-        1. coupon_im1: coupon from last period
-        2. L_TiTip1: Libor rate for period T_i to T_{i+1}
-        3. f: floor rate (according to author)
-        4. k: margin (according to author)
-        5. c: cap rate (according to author)
-    Return:
-        Coupon at time Ti.
-    """
-    c, f, k = args_snowball
-    temp = np.maximum(f, coupon_im1 + k - L_TiTip1)
-    coupon_i = np.minimum(c, temp)
-    # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
-    return coupon_i
-
 def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_tjm1, args_schemes, observed_bond_price):
     """
     Description:
         1. Implementing the Monte Carlo method to pricing zero bond price.
-        2. The zero bond price is calculated at calendar points Tj, j=[1,2,...,K].
+        2. The zero bond price is calculated at calendar points T_i i=[1,2,...,K].
         3. Discretisation schemes can be set to EM-scheme or NV-scheme.
     Return:
         Monte Carlo bond price, Monte Carlo standard error
@@ -300,13 +281,75 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
         x_Ti = X_arr[0, discretization_steps]
         y_Ti = X_arr[1, discretization_steps]
         # print(x_Ti, "\n", y_Ti)
+        # print("Ratio: ", P0T2/P0T1)
         temp_zero_bond_price = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
+        # print(temp_zero_bond_price)
         # print("Bond price: ", temp_zero_bond_price)
+        # print(temp_zero_bond_price)
         bond_price_arr[i] = temp_zero_bond_price
         """ End of MC """
+    # print(bond_price_arr.shape)
     mc_bond_mean = bond_price_arr.sum() / M
     mc_bond_stderr = bond_price_arr.std() / np.sqrt(M)
-    return mc_bond_mean, mc_bond_stderr
+    return mc_bond_mean, mc_bond_stderr, bond_price_arr
 
-# EM_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho)
-# NV_method(s, X_tjm1, kappa, sgm, theta, xi, chi, rho)
+@jit(nopython=True)
+def snowball_coupon(coupon_im1, L_TiTip1, args_snowball):
+    """
+    Description:
+        This function implements the calculation of coupon following eq(14) on p.1157.
+    Inputs:
+        1. coupon_im1: coupon from last period
+        2. L_TiTip1: Libor rate for period T_i to T_{i+1}
+        3. f: floor rate (according to author)
+        4. k: margin (according to author)
+        5. c: cap rate (according to author)
+    Return:
+        Coupon at time Ti.
+    """
+    c, f, k = args_snowball
+    temp = np.maximum(f, coupon_im1 + k - L_TiTip1)
+    coupon_i = np.minimum(c, temp)
+    # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
+    return coupon_i
+
+@jit(nopython=True)
+def mc_snowball_feat_price(M, K, observed_bond_price_K, I, dist_scheme, dist_steps, args_schemes, args_snowball):
+    """
+    Description:
+        1. Implementing simplified snowball pricing based on eq(14) and eq(15).
+    Steps:
+        1. Creating a timeline with [0,K] tenors
+        2. Starting at T1, calculate coupon_T1, move to T2.
+        3. Using MC_bond_price routine to calculate M-dimensional bond price.
+        4. At T2, Using coupon_T1 as input for coupon_T2, calculate coupon_T2.
+        5. Repeat until T_K to obtain coupon T_K.
+        6. Calculate the expected value of coupon payment and standard error.
+    Return:
+        coupon mean, coupon standard error, (M, K)-dimensional simulated coupons
+    """
+    coupon_arr = np.zeros(shape=(M, K))
+
+    for Ti in range(1, K):
+        s = (Ti - (Ti - 1)) / dist_steps
+        observed_bond_price = np.array((observed_bond_price_K[Ti - 1], observed_bond_price_K[Ti]))
+        # print("Observed bond price for Ti, T_{i+1}:", observed_bond_price)
+        T1 = Ti
+        T2 = Ti + 1
+        _, _, bond_price_arr = MC_bond_price(M, dist_scheme, dist_steps, T1, T2, s, I, args_schemes, observed_bond_price)
+        # print("Bond price: ", bond_price_arr)
+        l_rate = Libor(T1, T2, bond_price_arr)
+        # print("Libor shape", l_rate.shape)
+        # print("Libor rate at Ti=", Ti, ":", l_rate.mean())
+        # print(Ti-1, coupon_arr[:, Ti-1])
+        coupon_arr[:, Ti] = snowball_coupon(coupon_arr[:, Ti - 1], l_rate, args_snowball)
+        # print(coupon_arr.shape)
+        # print(Ti, coupon_arr[:, Ti])
+        ''' End of calculating coupon_i '''
+
+    ''' Calculating (1) expected total coupon payment & (2) standard error '''
+    coupon_mean = coupon_arr.mean()
+    coupon_std_err = coupon_arr.std() / np.sqrt(M)
+
+    return coupon_mean, coupon_std_err, coupon_arr
+
