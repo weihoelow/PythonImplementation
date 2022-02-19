@@ -1,0 +1,41 @@
+Testing implementation of discretization schemes:
+EM-method simulation of X_tk = [7.81764371e-04 2.00000000e-06 9.34292354e-02]
+NV-method simulation of X_tk = [9.62419498e-02 2.78403935e-06 8.70699353e-02]
+
+---------- Start of Testing (bond price) ----------
+
+____ [START] NV-method:
+For (n, M): (16, 65536) ,
+Expected bond price:  0.9602582572840865
+Standard Error:       7.05419133833598e-06
+Confidence Interval:  [0.9602441489014099, 0.9602723656667632]
+____ [END] NV-method ____
+____ [START] EM-method:
+For (n, M): (256, 1024) ,
+Expected bond price:  0.9526332500890919
+Standard Error:       0.00013497658517748728
+Confidence Interval: [0.952363296918737, 0.9529032032594469]
+____ [END] EM-method ____
+
+
+____ [START] Snowball coupon feature:
+(c, f, k): [0.1  0.01 0.05]
+(kappa, sgm, theta, xi, chi, rho): [ 0.1   0.02  1.5   0.01  0.01 -0.5 ]
+(x0, y0, z0): [0.  0.  0.1]
+Observed coupon prices: 
+ [0.99009901 0.98029605 0.97059015 0.96098034 0.95146569 0.94204524
+ 0.93271805 0.92348322 0.91433982 0.90528695]
+____ [START] Snowball - NV-method :
+For (n, M, K): (64, 1024, 10) ,
+Number of NaN in coupon_array:  0
+Expected snowball's coupon:     0.08418475712762494
+Standard Error:                 0.0010034541748992778
+Confidence Interval:            [0.08217784877782638, 0.08619166547742349]
+____ [END] Snowball - NV-method:
+____ [START] Snowball - EM-method:
+For (n, M, K): (256, 8192, 10) ,
+Expected snowball's coupon:   0.0820338382676187
+Standard Error:               0.0003633105742056735
+Confidence Interval:          [0.08130721711920735, 0.08276045941603005]
+____ [END] Snowball - EM-method
+____ [END] Snowball coupon feature ____
