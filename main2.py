@@ -48,7 +48,7 @@ def expV0(s, I, kappa, sgm, theta, xi, chi, rho):
 
     '''Intermediate steps to calculate elements of v0'''
     A = (sgm2*(w3+J))/((2*kappa-theta)*(kappa-theta)) * (np.exp(-theta*s)-np.exp(-kappa*s))
-    B = sgm2*((J/2*kappa) - (w3+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
+    B = sgm2*(J/(2*kappa) - (w3+J)/(2*kappa-theta))*(np.exp(-2*kappa*s)-np.exp(-kappa*s))
     C = (w2 - (sgm2*J)/(2*kappa) - (rho*xi*sgm)/4) * (1-np.exp(-kappa*s))
     D = (w3+J)/(2*kappa-theta)*(np.exp(-theta*s)-np.exp(-2*kappa*s))
     E = (J/(2*kappa))*(1-np.exp(-2*kappa*s))
@@ -121,7 +121,7 @@ def NV_method(s, X_tjm1, args_schemes):
     eta3 = eta[2]
 
     if eta3 >= 0:
-        X_tj = expV0(d*s0,
+        X_tj = expV0(s0,
                   expV1(s1*eta1,
                         expV2(s2*eta2,
                               expV0(s0,
@@ -202,15 +202,18 @@ def EM_method(s, X_tjm1, args_schemes):
     v0 = V0(X_tjm1, kappa, sgm, theta, xi, chi, rho)
     v1 = V1(X_tjm1, kappa, sgm, theta, xi, chi, rho)
     v2 = V2(X_tjm1, kappa, sgm, theta, xi, chi, rho)
-    v0_tilde = v0 + 0.5*(v1*v1 + v2*v2)
+    correction0 = (sgm**2)/4
+    correction1 = 0
+    correction2 = 0.5 * chi**2
+    correction = np.array([correction0, correction1, correction2])
+    v0_tilde = v0 + correction
 
     eta = np.random.normal(0, 1, size=(3, 2))
     eta1 = eta[:, 0]
-    # print("eta: \n", eta)
-    # print("eta1:", eta1)
+    eta2 = eta[:, 1]
 
-    # Ito-form
-    X_tj = X_tjm1 + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta1
+    # Ito form
+    X_tj = X_tjm1 + (v0_tilde * s) + np.sqrt(s)*v1*eta1 + np.sqrt(s)*v2*eta2
 
     return X_tj
 
@@ -250,6 +253,7 @@ def Libor(T_i, T_ip1, P):
     """
     delta = T_ip1 -T_i
     libor_rate = (1/delta)*(1/P - 1)
+
     return libor_rate
 
 @jit(nopython=True)
@@ -257,7 +261,7 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
     """
     Description:
         1. Implementing the Monte Carlo method to pricing zero bond price.
-        2. The zero bond price is calculated at calendar points T_i i=[1,2,...,K].
+        2. The zero bond price is calculated at calendar points T_i, i=[1,2,...,K].
         3. Discretisation schemes can be set to EM-scheme or NV-scheme.
     Return:
         Monte Carlo bond price, Monte Carlo standard error
@@ -270,7 +274,7 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
         X_arr = np.ones(shape=(3, discretization_steps + 1))
         # print(X_arr)
         for j in range(1, discretization_steps + 1):
-            """ Do discretization method """
+            """ Do discretisation method """
             X_arr[:, 0] = X_tjm1
             # print("X_tjm1", "j=", j, X_arr[:, j-1])
             x_tj = discretization_method(s, X_arr[:, j - 1], args_schemes)
