@@ -204,7 +204,7 @@ def EM_method(s, X_tjm1, args_schemes):
     v2 = V2(X_tjm1, kappa, sgm, theta, xi, chi, rho)
     correction0 = (sgm**2)/4
     correction1 = 0
-    correction2 = 0.5 * chi**2
+    correction2 = (chi**2)/4
     correction = np.array([correction0, correction1, correction2])
     v0_tilde = v0 + correction
 
