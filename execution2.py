@@ -1,7 +1,7 @@
 from main2 import *
 import matplotlib.pyplot as plt
 
-file1 = open("PythonImplementation.txt", "w")
+file1 = open("PythonImplementation-v2.txt", "w")
 
 '''
 Parameters - Given in the paper
@@ -15,7 +15,7 @@ rho = -0.5
 args_schemes = np.array((kappa, sgm, theta, xi, chi, rho))
 
 n = 20     # discretisation steps
-M = 2**24  # MC runs
+# M = 2**24  # MC runs
 
 '''
 Initial conditions
@@ -28,17 +28,6 @@ I = np.array((x0, y0, z0))
 t = 0
 T = 1
 s = (T-t)/n
-'''
-Implementing discretisation schemes
-'''
-# s0 = (T/n) * 0.5
-# s1 = np.sqrt(T/n)
-# s2 = np.sqrt(T/n)
-# s_arr = np.array([s0, s1, s2])
-
-# print(expV0(s0, I, kappa, sgm, theta, xi, chi, rho))
-# print(expV1(s1, I, kappa, sgm, theta, xi, chi, rho))
-# print(expV2(s2, I, kappa, sgm, theta, xi, chi, rho))
 
 '''
 Discretization schemes
@@ -54,6 +43,7 @@ print(f"NV-method simulation of X_tk = {NV_X}", file=file1)
 '''
 Bond reconstruction formula
 '''
+
 P0t = 1/1.05
 P0T = 1/1.05**2
 print("P0T/P0t =", P0T/P0t)
@@ -83,6 +73,7 @@ Testing: Monte Carlo of bond price
     (2) EM-method
 '''
 print("\n---------- Start of Testing (bond price) ----------\n", file=file1)
+print("\n---------- Start of Testing (bond price) ----------\n")
 
 ''' Common parameters '''
 T1 = 1  # T_i
@@ -101,18 +92,19 @@ args_schemes = np.array((kappa, sgm, theta, xi, chi, rho))
 
 ''' (1) NV-method '''
 print("____ [START] NV-method:", file=file1)
+print("____ [START] NV-method:")
 
 # n_NV = 3  # For testing - 3 steps
 # n_NV = 2**3  # 8 steps
-n_NV = 2**4  # 16 steps
-# n_NV = 2**6  # 64 steps
+# n_NV = 2**4  # 16 steps
+n_NV = 2**6  # 64 steps
 
 s_NV = (T2 - T1) / n_NV
 
 # M = 2        # Testing only
 # M = 2**10    # MC runs = 1,024
-M = 2**16    # MC runs = 65,536
-# M = 2**20  # MC runs = 1,048,576
+# M = 2**16    # MC runs = 65,536
+M = 2**20  # MC runs = 1,048,576
 # M = 2**24    # MC runs = 16,777,216
 
 MC_bond_NV_mean, MC_bond_NV_stderr, _ = MC_bond_price(M, NV_method, n_NV, T1, T2, s_NV, I, args_schemes, observed_bond_price)
@@ -122,9 +114,11 @@ print("Expected bond price: ", MC_bond_NV_mean, file=file1)
 print("Standard Error:      ", MC_bond_NV_stderr, file=file1)
 print(f"Confidence Interval:  [{MC_bond_NV_mean - 2*MC_bond_NV_stderr}, {MC_bond_NV_mean + 2*MC_bond_NV_stderr}]", file=file1)
 print("____ [END] NV-method ____", file=file1)
+print("____ [END] NV-method ____")
 
 ''' (2) EM-method '''
 print("____ [START] EM-method:", file=file1)
+print("____ [START] EM-method:")
 
 # n_EM = 3  # For testing only
 # n_EM = 80
@@ -133,9 +127,10 @@ n_EM = 2**8  # 256
 s_EM = (T2 - T1)/n_EM
 
 # M = 2  # Testing only
-M = 2**10  # MC runs = 1,024
+# M = 2**10  # MC runs = 1,024
 # M = 2**16  # MC runs = 65,536
-# M = 2**20  # MC runs = 1,048,576
+M = 2**20  # MC runs = 1,048,576
+# M = 2**23  # MC runs = 8,388,608
 # M = 2**24  # MC runs = 16,777,216
 
 # n_EM_testing = 1
@@ -153,14 +148,18 @@ print("Standard Error:      ", MC_bond_EM_stderr, file=file1)
 print(f"Confidence Interval: [{MC_bond_EM_mean - 2*MC_bond_EM_stderr}, {MC_bond_EM_mean + 2*MC_bond_EM_stderr}]", file=file1)
 
 print("____ [END] EM-method ____", file=file1)
+print("____ [END] EM-method ____")
+print("\n---------- End of Testing (bond price) ----------\n", file=file1)
+print("\n---------- End of Testing (bond price) ----------\n")
+
 print("\n", file=file1)
 
 '''
 Pricing derivatives 
     1. Snowball's coupon feature (according to current paper)
-    2. Asian option (similar to the original paper)
 '''
 print("____ [START] Snowball coupon feature:", file=file1)
+print("____ [START] Snowball coupon feature:")
 
 '''  
 Parameters for Snowball (provided by author) 
@@ -200,14 +199,16 @@ print("Observed coupon prices: \n", observed_bond_price_K, file=file1)
 
 ''' (1) NV-method '''
 print("____ [START] Snowball - NV-method :", file=file1)
+print("____ [START] Snowball - NV-method :")
 
+# n_NV = 2**5     # For testing - 32 steps
 n_NV = 2**6     # For testing - 64 steps
 # n_NV = 2**7  # 128 steps
 
-M = 2**10    # MC runs = 1,024
+# M = 2**10    # MC runs = 1,024
 # M = 2**13    # MC runs = 8,192
-# M = 2**16    # MC runs = 65,536
-# M = 2**20  # MC runs = 1,048,576
+M = 2**16    # MC runs = 65,536
+# M = 2**23  # MC runs = 8,388,608
 # M = 2**24    # MC runs = 16,777,216
 
 coupon_mean_nv, coupon_std_err_nv, coupon_arr_nv = mc_snowball_feat_price(M, K, observed_bond_price_K, I,  NV_method, n_NV, args_schemes, args_snowball)
@@ -221,15 +222,18 @@ print("Standard Error:                ", coupon_std_err_nv, file=file1)
 print(f"Confidence Interval:            [{coupon_mean_nv - 2*coupon_std_err_nv}, {coupon_mean_nv + 2*coupon_std_err_nv}]", file=file1)
 
 print("____ [END] Snowball - NV-method:", file=file1)
+print("____ [END] Snowball - NV-method:")
 
 ''' (2) EM-method '''
 print("____ [START] Snowball - EM-method:", file=file1)
+print("____ [START] Snowball - EM-method:")
 
 n_EM = 2**8
 
-M = 2**13    # MC runs = 8,192
+# M = 2**13    # MC runs = 8,192
 # M = 2**16    # MC runs = 65,536
-# M = 2**20  # MC runs = 1,048,576
+M = 2**20  # MC runs = 1,048,576
+# M = 2**23  # MC runs = 8,388,608
 # M = 2**24    # MC runs = 16,777,216
 
 coupon_mean_em, coupon_std_err_em, coupon_arr_em = mc_snowball_feat_price(M, K, observed_bond_price_K, I,  EM_method, n_EM, args_schemes, args_snowball)
@@ -237,10 +241,61 @@ print("For (n, M, K):", (n_EM, M, K), ",", file=file1)
 print("Expected snowball's coupon:  ", coupon_mean_em, file=file1)
 print("Standard Error:              ", coupon_std_err_em, file=file1)
 print(f"Confidence Interval:          [{coupon_mean_em - 2*coupon_std_err_em}, {coupon_mean_em + 2*coupon_std_err_em}]", file=file1)
+coupon_benchmark = coupon_mean_em
 
 print("____ [END] Snowball - EM-method", file=file1)
 print("____ [END] Snowball coupon feature ____", file=file1)
+print("____ [END] Snowball - EM-method")
+print("____ [END] Snowball coupon feature ____")
+print("\n", file=file1)
+
 
 ''' Plotting the error '''
+# print("____ [START] Convergence of Error", file=file1)
+#
+# M = 2**5
+# n_steps = np.array([8, 16, 32, 64, 128])
+# NV_stderr = np.zeros(n_steps.shape[0])
+# EM_stderr = np.zeros(n_steps.shape[0])
+#
+# for i in range(n_steps.shape[0]):
+#     coupon_mean_nv, coupon_std_err_nv, coupon_arr_nv = mc_snowball_feat_price(M, K, observed_bond_price_K, I, NV_method,
+#                                                                               n_steps[i], args_schemes, args_snowball)
+#     coupon_mean_em, coupon_std_err_em, coupon_arr_em = mc_snowball_feat_price(M, K, observed_bond_price_K, I, EM_method,
+#                                                                               n_steps[i], args_schemes, args_snowball)
+#     NV_stderr[i] = coupon_std_err_nv
+#     EM_stderr[i] = coupon_std_err_em
+#     print("steps:", n_steps[i], file=file1)
+#     print("NV method - coupon mean, std err:", coupon_mean_nv, coupon_std_err_nv, file=file1)
+#     print("EM method - coupon mean, std err:", coupon_mean_em, coupon_std_err_em, file=file1)
+#
+# fig = plt.subplot()
+# fig.plot(n_steps, NV_stderr, label="NV-method")
+# fig.plot(n_steps, EM_stderr, label="EM-method")
+# plt.title(f"Std error of methods, M={M}")
+# plt.xlabel("Discretisation steps")
+# plt.ylabel("Std Err")
+# plt.legend()
+# plt.show()
 
+print("____ [START] Discretisation Error", file=file1)
 
+n_steps = np.array([8, 16, 32, 64, 128])
+# M = 2**23  # MC runs = 8,388,608
+M = 2**20  # MC runs = 1,048,576
+dist_err = np.zeros(n_steps.shape[0])
+
+for i in range(n_steps.shape[0]):
+    coupon_mean_nv, coupon_std_err_nv, coupon_arr_nv = mc_snowball_feat_price(M, K, observed_bond_price_K, I, NV_method,
+                                                                              n_steps[i], args_schemes, args_snowball)
+    dist_err[i] = coupon_mean_nv - coupon_benchmark
+    print("steps:", n_steps[i], file=file1)
+    print("Discretisation Error (C_method - C_true):", dist_err[i], file=file1)
+
+fig = plt.subplot()
+fig.plot(n_steps, dist_err, label="NV-method")
+plt.title(f"Std error of methods, M={M}")
+plt.xlabel("Discretisation steps")
+plt.ylabel("Discretisation Error")
+plt.legend()
+plt.show()

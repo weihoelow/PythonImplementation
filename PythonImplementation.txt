@@ -1,20 +1,20 @@
 Testing implementation of discretization schemes:
-EM-method simulation of X_tk = [7.81764371e-04 2.00000000e-06 9.34292354e-02]
-NV-method simulation of X_tk = [9.62419498e-02 2.78403935e-06 8.70699353e-02]
+EM-method simulation of X_tk = [1.64134260e-03 2.00000000e-06 9.31217574e-02]
+NV-method simulation of X_tk = [9.34266119e-02 1.91781369e-06 9.23580735e-02]
 
 ---------- Start of Testing (bond price) ----------
 
 ____ [START] NV-method:
 For (n, M): (16, 65536) ,
-Expected bond price:  0.9602582572840865
-Standard Error:       7.05419133833598e-06
-Confidence Interval:  [0.9602441489014099, 0.9602723656667632]
+Expected bond price:  0.9602647506406541
+Standard Error:       7.064164830070752e-06
+Confidence Interval:  [0.9602506223109939, 0.9602788789703143]
 ____ [END] NV-method ____
 ____ [START] EM-method:
 For (n, M): (256, 1024) ,
-Expected bond price:  0.9526332500890919
-Standard Error:       0.00013497658517748728
-Confidence Interval: [0.952363296918737, 0.9529032032594469]
+Expected bond price:  0.9524925899634653
+Standard Error:       0.00013496522245607593
+Confidence Interval: [0.9522226595185531, 0.9527625204083775]
 ____ [END] EM-method ____
 
 
@@ -26,16 +26,48 @@ Observed coupon prices:
  [0.99009901 0.98029605 0.97059015 0.96098034 0.95146569 0.94204524
  0.93271805 0.92348322 0.91433982 0.90528695]
 ____ [START] Snowball - NV-method :
+0.08418949739944045
+0.001003559557216912
+[ 0.08218237828500663 0.08619661651387428 ]
 For (n, M, K): (64, 1024, 10) ,
 Number of NaN in coupon_array:  0
-Expected snowball's coupon:     0.08418475712762494
-Standard Error:                 0.0010034541748992778
-Confidence Interval:            [0.08217784877782638, 0.08619166547742349]
+Expected snowball's coupon:     0.08418949739945072
+Standard Error:                 0.0010035595572168733
+Confidence Interval:            [0.08218237828501698, 0.08619661651388447]
 ____ [END] Snowball - NV-method:
 ____ [START] Snowball - EM-method:
 For (n, M, K): (256, 8192, 10) ,
-Expected snowball's coupon:   0.0820338382676187
-Standard Error:               0.0003633105742056735
-Confidence Interval:          [0.08130721711920735, 0.08276045941603005]
+Expected snowball's coupon:   0.08203187818702862
+Standard Error:               0.00036328612280552556
+Confidence Interval:          [0.08130530594141756, 0.08275845043263967]
 ____ [END] Snowball - EM-method
 ____ [END] Snowball coupon feature ____
+
+
+____ [START] Convergence of Error
+steps: 8
+NV method - coupon mean, std err: 0.08476681553447947 0.005651954229296368
+EM method - coupon mean, std err: 0.0817269273564991 0.005848085389657525
+steps: 16
+NV method - coupon mean, std err: 0.08448043484787142 0.005665770489874773
+EM method - coupon mean, std err: 0.08185048067582833 0.005823051403525497
+steps: 32
+NV method - coupon mean, std err: 0.08425757625635659 0.0056740074589480705
+EM method - coupon mean, std err: 0.08208205447981176 0.005783988393896928
+steps: 64
+NV method - coupon mean, std err: 0.08420810273870227 0.0056803181951958
+EM method - coupon mean, std err: 0.08204854444813559 0.005805220820760101
+steps: 128
+NV method - coupon mean, std err: 0.08416504191958012 0.00567620145786036
+EM method - coupon mean, std err: 0.08209128954985195 0.005796895281868071
+____ [START] Discretisation Error
+steps: 8
+Discretisation Error (C_method - C_true): 0.002757047083427777
+steps: 16
+Discretisation Error (C_method - C_true): 0.002438990843563235
+steps: 32
+Discretisation Error (C_method - C_true): 0.002251028729920973
+steps: 64
+Discretisation Error (C_method - C_true): 0.0021533741416849966
+steps: 128
+Discretisation Error (C_method - C_true): 0.0021039087193087808
