@@ -2,17 +2,17 @@ import numpy as np
 from numba import jit
 
 @jit(nopython=True)
-def calc_h(chi, t):
-    """
-    Assuming one dimension
-    """
-    return np.exp(-chi*t)
-
-@jit(nopython=True)
 def calc_G(t, T, chi):
     """
-    Assuming one dimension.
-    Calculating G to be used as input for bond reconstruction formula
+    Input:
+        1. t is maturity ant time t.
+        2. T is maturity at ti,e T.
+        3. 0 < t < T
+        3. chi is one-dimensional real number provided by author.
+    Usage:
+        Helper function to calculate G for bond reconstruction formula.
+    Return:
+        A one dimension real number.
     """
     return (1-np.exp(chi*(T-t)))/chi
 
@@ -20,9 +20,10 @@ def calc_G(t, T, chi):
 def calc_J(xi, chi, theta):
     """
     Inputs:
-        Inputs are xi, chi and theta which are defined in the paper.
+        1. xi, chi and theta are one dimension  real number.
+        2. xi, chi and theta are defined in the paper.
     Usage:
-        Calculate a component of NV-method.
+        A helper function to calculate a component of NV-method.
     Return:
         A single number.
     """
@@ -34,9 +35,11 @@ def expV0(s, I, kappa, sgm, theta, xi, chi, rho):
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
         2. kappa, sigma, theta, xi, chi, rho and delta are 1D real number; given in the paper
-        3. s : delta = tk - tkm1; the time steps for discretized tenor.
+        3. s = tk - tkm1; the time steps for discretized tenor.
     Usage:
-        1. (omega1, omega2, omega3) are (x,y,z) accordingly.
+        1. Implements V0 from the equation (9) in p.1153
+        2. (w1, w2, w3) are (x,y,z) accordingly.
+        3. A helper function to calculate a component for NV-method
     Return:
         The 3D vector of exp(sV0)(X)
     """
@@ -66,9 +69,11 @@ def expV1(s, I, kappa, sgm, theta, xi, chi, rho):
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
         2. kappa, sigma, theta, xi, chi, rho and delta are 1D real number; given in the paper
-        3. s : delta = tk - tkm1; the time steps for discretized tenor.
+        3. s = tk - tkm1; the time steps for discretized tenor.
     Usage:
-        1. (omega1, omega2, omega3) are (x,y,z) accordingly.
+        1. Implements V0 from the equation (9) in p.1153
+        2. (w1, w2, w3) are (x,y,z) accordingly.
+        3. A helper function to calculate a component for NV-method
     Return:
         The 3D vector of exp(sV1)(X)
     """
@@ -89,9 +94,11 @@ def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
     Inputs:
         1. I: The 3D vector for the initial conditions for (x,y,z)
         2. kappa, sigma, theta, xi, chi, rho and delta are 1D real number; given in the paper
-        3. s : delta = tk - tkm1; the time steps for discretized tenor.
+        3. s = tk - tkm1; the time steps for discretised tenor.
     Usage:
-        1. (omega1, omega2, omega3) are (x,y,z) accordingly.
+        1. Implements V0 from the equation (9) in p.1153
+        2. (w1, w2, w3) are (x,y,z) accordingly.
+        3. A helper function to calculate a component for NV-method
     Return:
         The 3D vector of exp(sV2)(X)
     """
@@ -108,6 +115,17 @@ def expV2(s, I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def NV_method(s, X_tjm1, args_schemes):
+    """
+    Inputs:
+        1. s = t_{k+1} - t_k
+        2. X_tjm1 can be interpreted as initial condition when j=1, or as previous step when j>1.
+        3. args_schemes =  (kappa, sgm, theta, xi, chi, rho), are parameters needed.
+    Descriptions:
+        1. This function implements the NV-method on p.1150, proposition 2.
+        2. The NV-method is applied to explicit formula of qGSV-CIR model on p.1153, eqn(9).
+    Return:
+        A three-dimensional vector containing (x(Ti), y(Ti), z(Ti)).
+    """
     kappa, sgm, theta, xi, chi, rho = args_schemes
 
     d = 2
@@ -143,6 +161,16 @@ def NV_method(s, X_tjm1, args_schemes):
 
 @jit(nopython=True)
 def V0(I, kappa, sgm, theta, xi, chi, rho):
+    """
+    Input:
+        1. I can be interpreted as initial condition or X_{t_{j-1}}
+        2. kappa, sigma, theta, xi, chi and rho are one dimensional real number.
+    Description:
+        1. This function implements the formula in p.1152, section 3.2.
+        2. A helper function to calculate a component for EM-method.
+    Return:
+        A three-dimensional vector containing V0 (x(T_j),y(T_j),z(T_j))
+    """
     w1 = I[0]
     w2 = I[1]
     # w3 = I[2]
@@ -158,6 +186,16 @@ def V0(I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def V1(I, kappa, sgm, theta, xi, chi, rho):
+    """
+    Input:
+        1. I can be interpreted as initial condition or X_{t_{j-1}}
+        2. kappa, sigma, theta, xi, chi and rho are one dimensional real number.
+    Description:
+        1. This function implements the formula in p.1152, section 3.2.
+        2. A helper function to calculate a component for EM-method.
+    Return:
+        A three-dimensional vector containing V1 (x(T_j),y(T_j),z(T_j))
+    """
     w1 = I[0]
     w2 = I[1]
     # w3 = I[2]
@@ -172,6 +210,16 @@ def V1(I, kappa, sgm, theta, xi, chi, rho):
 
 @jit(nopython=True)
 def V2(I, kappa, sgm, theta, xi, chi, rho):
+    """
+    Input:
+        1. I can be interpreted as initial condition or X_{t_{j-1}}
+        2. kappa, sigma, theta, xi, chi and rho are one dimensional real number.
+    Description:
+        1. This function implements the formula in p.1152, section 3.2.
+        2. A helper function to calculate a component for EM-method.
+    Return:
+        A three-dimensional vector containing V2 (x(T_j),y(T_j),z(T_j))
+    """
     w1 = I[0]
     w2 = I[1]
     # w3 = I[2]
@@ -188,12 +236,14 @@ def V2(I, kappa, sgm, theta, xi, chi, rho):
 def EM_method(s, X_tjm1, args_schemes):
     """
     Inputs:
+        1. s = t_j+1 - t_j
+        2. X_tjm1 can be interpreted as initial condition when j=1 or X at T_{j-1}
+            E.g, for j=1, X_tjm1 = X_t0 = x0
     Description:
         1. EM-method discretization scheme applied to Ito form SDEs eq (7) on p.1152.
         2. The SDEs have a vector field representation.
         3. Since the SDEs are of Ito form, V_tilde is calculated.
         4. The function implements proposition 1 on p.1149.
-        5. For j=1, X_tjm1 = X_t0 = x0
     Return:
         A 3D vector of (x,y,z).
     """
@@ -230,7 +280,7 @@ def zero_bond_price(P0t, P0T, x, y, t, T, chi):
         4. y: Second component of X, i.e X[1]
         5. t, T are the time to maturity; 0 < t0 < t < T.
     Return:
-        Zero bond price according to the discretisation schemes.
+        A M-dimensional vector of zero bond price under chosen discretisation schemes.
     """
     G = calc_G(t, T, chi)
     G2 = G**2
@@ -242,14 +292,16 @@ def zero_bond_price(P0t, P0T, x, y, t, T, chi):
 @jit(nopython=True)
 def Libor(T_i, T_ip1, P):
     """
-    Description:
-        Calculate the LIBOR rate from t to T using bond price from eq(5).
-        This implements eq (6) on p.1151.
-        delta(T_i, T_i+1) is the day count of the period [T_i, T_i+1].
     Inputs:
         1. T_i and T_ip1 are sub-periods
+        2. P is the zero bond price calculated using bond reconstruction formula.
+        3. P is calculated using zero_bond_price().
+    Description:
+        1. Calculate the LIBOR rate from t to T using bond price from eq(5).
+        2. This implements eq (6) on p.1151.
+        3. delta(T_i, T_i+1) is the day count of the period [T_i, T_i+1].
     Return:
-         One-dimensional Libor rate
+        A M-dimensional vector of Libor rate.
     """
     delta = T_ip1 -T_i
     libor_rate = (1/delta)*(1/P - 1)
@@ -259,12 +311,24 @@ def Libor(T_i, T_ip1, P):
 @jit(nopython=True)
 def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_tjm1, args_schemes, observed_bond_price):
     """
+    Inputs:
+        1. M is the number of Monte Carlo simulation.
+        2. discretisation_method is NV-method of EM-method
+        3. discretisation_steps is the number of partitions between T1 and T2
+        4. T1 and T2 and maturity at T1 and maturity at T2 respectively.
+        5. s is the discretised time steps, s = t_k+1 - t_k
+        6. X_tjm1 is X at time t_{j-1}. When j =0, X_tjm1 is x0.
+        7. args_schemes contains all additional parameters needed by EM-method and NV-method.
+        8. Observed_bond_price is the zero bond price at time t_0.
     Description:
         1. Implementing the Monte Carlo method to pricing zero bond price.
         2. The zero bond price is calculated at calendar points T_i, i=[1,2,...,K].
-        3. Discretisation schemes can be set to EM-scheme or NV-scheme.
+        3. In the Monte Carlo simulation, x(y) and y(t) are simulated using NV- or EM-method according to specification.
+        4. The simulated x(t) and y(t) are used in calculation of zero bond price.
+        5. At each simulation, one zero bond price will be recorded.
+        6. Finally, the bond price is calculated as average of all M bond prices.
     Return:
-        Monte Carlo bond price, Monte Carlo standard error
+        Monte Carlo bond price, Monte Carlo standard error, M-dimension vector of zero bond price
     """
     P0T1, P0T2 = observed_bond_price
     kappa, sgm, theta, xi, chi, rho = args_schemes
@@ -272,27 +336,17 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
     bond_price_arr = np.zeros(M)
     for i in range(M):
         X_arr = np.ones(shape=(3, discretization_steps + 1))
-        # print(X_arr)
         for j in range(1, discretization_steps + 1):
-            """ Do discretisation method """
+            """ Do discretisation method to generate x(t), y(t) """
             X_arr[:, 0] = X_tjm1
-            # print("X_tjm1", "j=", j, X_arr[:, j-1])
             x_tj = discretization_method(s, X_arr[:, j - 1], args_schemes)
             X_arr[:, j] = x_tj
-            # print("X_tj", "j=", j, X_arr[:, j])
-        # print(X_arr)
         """ Do bond price """
         x_Ti = X_arr[0, discretization_steps]
         y_Ti = X_arr[1, discretization_steps]
-        # print(x_Ti, "\n", y_Ti)
-        # print("Ratio: ", P0T2/P0T1)
         temp_zero_bond_price = zero_bond_price(P0T1, P0T2, x_Ti, y_Ti, T1, T2, chi)
-        # print(temp_zero_bond_price)
-        # print("Bond price: ", temp_zero_bond_price)
-        # print(temp_zero_bond_price)
         bond_price_arr[i] = temp_zero_bond_price
         """ End of MC """
-    # print(bond_price_arr.shape)
     mc_bond_mean = bond_price_arr.sum() / M
     mc_bond_stderr = bond_price_arr.std() / np.sqrt(M)
     return mc_bond_mean, mc_bond_stderr, bond_price_arr
@@ -300,29 +354,38 @@ def MC_bond_price(M, discretization_method, discretization_steps, T1, T2, s, X_t
 @jit(nopython=True)
 def snowball_coupon(coupon_im1, L_TiTip1, args_snowball):
     """
-    Description:
-        This function implements the calculation of coupon following eq(14) on p.1157.
     Inputs:
         1. coupon_im1: coupon from last period
         2. L_TiTip1: Libor rate for period T_i to T_{i+1}
+        3. args_snowball = (c,f,k)
         3. f: floor rate (according to author)
         4. k: margin (according to author)
         5. c: cap rate (according to author)
+    Description:
+        This function implements the calculation of coupon following eq(14) on p.1157.
     Return:
-        Coupon at time Ti.
+        A M-dimension vector of coupon at time Ti.
     """
     c, f, k = args_snowball
     temp = np.maximum(f, coupon_im1 + k - L_TiTip1)
     coupon_i = np.minimum(c, temp)
-    # coupon_i = np.minimum(c, np.maximum(f, coupon_im1 + k - L_TiTip1))
     return coupon_i
 
 @jit(nopython=True)
 def mc_snowball_feat_price(M, K, observed_bond_price_K, I, dist_scheme, dist_steps, args_schemes, args_snowball):
     """
+    Inputs:
+        1. M is number of Monte Carlo simulation
+        2. K is number of coupon term
+        3. obvserved_bond_price_K is the bond price observed at time t_0 with maturity {T_i}, i = 1,2,...,K.
+        4. I can be interpreted as initial condition or X_{t_j-1}, i.e X of previous step.
+        5. dist_scheme is either NV- or EM-method
+        6. dist_steps is discretisation steps or number of partitions.
+        7. args_schemes contains all parameters for NV- or EM-method.
+        8. args_snowball contains all parameters to calculate snowball coupon.
     Description:
         1. Implementing simplified snowball pricing based on eq(14) and eq(15).
-    Steps:
+        Steps:
         1. Creating a timeline with [0,K] tenors
         2. Starting at T1, calculate coupon_T1, move to T2.
         3. Using MC_bond_price routine to calculate M-dimensional bond price.
@@ -337,18 +400,11 @@ def mc_snowball_feat_price(M, K, observed_bond_price_K, I, dist_scheme, dist_ste
     for Ti in range(1, K):
         s = (Ti - (Ti - 1)) / dist_steps
         observed_bond_price = np.array((observed_bond_price_K[Ti - 1], observed_bond_price_K[Ti]))
-        # print("Observed bond price for Ti, T_{i+1}:", observed_bond_price)
         T1 = Ti
         T2 = Ti + 1
         _, _, bond_price_arr = MC_bond_price(M, dist_scheme, dist_steps, T1, T2, s, I, args_schemes, observed_bond_price)
-        # print("Bond price: ", bond_price_arr)
         l_rate = Libor(T1, T2, bond_price_arr)
-        # print("Libor shape", l_rate.shape)
-        # print("Libor rate at Ti=", Ti, ":", l_rate.mean())
-        # print(Ti-1, coupon_arr[:, Ti-1])
         coupon_arr[:, Ti] = snowball_coupon(coupon_arr[:, Ti - 1], l_rate, args_snowball)
-        # print(coupon_arr.shape)
-        # print(Ti, coupon_arr[:, Ti])
         ''' End of calculating coupon_i '''
 
     ''' Calculating (1) expected total coupon payment & (2) standard error '''
